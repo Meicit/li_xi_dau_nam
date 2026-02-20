@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vòng Quay May Mắn Pro Max - Fixed</title>
+    <title>Vòng Quay May Mắn Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #e63946; --dark: #1d3557; --gold: #ffb703; }
@@ -13,6 +13,8 @@
         }
 
         .wheel-container { position: relative; margin-bottom: 20px; }
+        
+        /* Kim chỉ giải thưởng */
         .pointer {
             position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
             width: 45px; height: 55px; background: var(--primary); 
@@ -21,6 +23,10 @@
         }
 
         canvas { border: 12px solid #fff; border-radius: 50%; box-shadow: 0 0 50px rgba(255,255,255,0.2); background: white; }
+
+        #result-text {
+            font-size: 3rem; font-weight: bold; color: var(--gold); height: 60px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
 
         button {
             padding: 20px 70px; font-size: 2.5rem; font-weight: bold; cursor: pointer;
@@ -32,30 +38,14 @@
 
         .info { display: flex; gap: 40px; margin-top: 20px; font-size: 1.6rem; font-weight: bold; }
         .info span { color: var(--gold); }
-
-        /* Bảng thông báo chúc mừng */
-        #resultModal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; color: #333; padding: 40px; border-radius: 30px;
-            box-shadow: 0 0 100px rgba(255, 255, 255, 0.5); z-index: 100; text-align: center;
-            min-width: 300px; border: 10px solid var(--gold);
-        }
-        #resultModal h2 { font-size: 2rem; margin: 0; color: #666; }
-        #resultModal h1 { font-size: 4rem; margin: 10px 0; color: var(--primary); }
-        #resultModal button { font-size: 1.5rem; padding: 10px 40px; margin-top: 20px; box-shadow: none; }
-
+        
         #mode-indicator { position: fixed; top: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
 
 <div id="mode-indicator">Normal</div>
-
-<div id="resultModal">
-    <h2>CHÚC MỪNG BẠN!</h2>
-    <h1 id="prizeText">---</h1>
-    <button onclick="closeModal()">TIẾP TỤC</button>
-</div>
+<div id="result-text">SẴN SÀNG!</div>
 
 <div class="wheel-container">
     <div class="pointer"></div>
@@ -69,13 +59,14 @@
     <div>Giải 20k: <span id="count20">10</span></div>
 </div>
 
-<audio id="tickSound" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-<audio id="winSound" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+<audio id="tickSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+<audio id="winSound" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
 
 <script>
     const canvas = document.getElementById('wheel');
     const ctx = canvas.getContext('2d');
     const btn = document.getElementById('spinBtn');
+    const resultDisplay = document.getElementById('result-text');
     const tickSound = document.getElementById('tickSound');
     const winSound = document.getElementById('winSound');
 
@@ -119,6 +110,7 @@
             ctx.fillText(prize.label, 230, 10);
             ctx.restore();
         });
+        // Vẽ tâm
         ctx.beginPath();
         ctx.fillStyle = "white";
         ctx.arc(250, 250, 12, 0, Math.PI * 2);
@@ -128,10 +120,11 @@
     drawWheel();
 
     window.addEventListener('keydown', (e) => {
-        if (e.code === "Space" && !isSpinning && document.getElementById('resultModal').style.display !== 'block') spin();
+        if (e.code === "Space" && !isSpinning) spin();
         if (e.code === "AltRight" || e.key === "AltGraph") {
             cheatMode = true;
             document.getElementById('mode-indicator').innerText = "Target: 50K";
+            e.preventDefault();
         }
     });
 
@@ -139,79 +132,5 @@
 
     function spin() {
         if (isSpinning) return;
-        
-        // Kích hoạt âm thanh (Unlock audio trên Chrome)
-        tickSound.play().then(() => tickSound.pause());
-        winSound.play().then(() => winSound.pause());
-
         isSpinning = true;
         btn.disabled = true;
-
-        let targetPrizeIndex;
-        if (cheatMode && inventory["50.000đ"] > 0) {
-            targetPrizeIndex = prizes.findIndex(p => p.label === "50.000đ");
-            cheatMode = false;
-            document.getElementById('mode-indicator').innerText = "Normal";
-        } else {
-            targetPrizeIndex = Math.floor(Math.random() * prizes.length);
-            if (inventory[prizes[targetPrizeIndex].label] === 0) targetPrizeIndex = 0;
-        }
-
-        const arc = (2 * Math.PI) / prizes.length;
-        const finalAngle = (prizes.length - targetPrizeIndex) * arc - arc/2 - (Math.PI/2);
-        const totalRotationTarget = (Math.PI * 2) * 10 + finalAngle;
-
-        let start = null;
-        const duration = 5000;
-
-        function animate(timestamp) {
-            if (!start) start = timestamp;
-            let progress = (timestamp - start) / duration;
-            if (progress > 1) progress = 1;
-
-            const easing = 1 - Math.pow(1 - progress, 3);
-            currentRotation = easing * totalRotationTarget;
-
-            // Âm thanh tạch tạch
-            const curAngleDeg = (currentRotation * 180 / Math.PI);
-            if (Math.floor(curAngleDeg / (360/prizes.length)) > Math.floor(lastTickAngle / (360/prizes.length))) {
-                tickSound.currentTime = 0;
-                tickSound.play().catch(()=>{});
-            }
-            lastTickAngle = curAngleDeg;
-
-            drawWheel();
-
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                showResult(prizes[targetPrizeIndex].label);
-            }
-        }
-        requestAnimationFrame(animate);
-    }
-
-    function showResult(result) {
-        isSpinning = false;
-        winSound.play().catch(()=>{});
-
-        if (inventory[result] !== undefined) {
-            inventory[result]--;
-            document.getElementById('count50').innerText = inventory["50.000đ"];
-            document.getElementById('count20').innerText = inventory["20.000đ"];
-        }
-
-        // Hiện bảng thông báo trúng giải
-        document.getElementById('prizeText').innerText = result;
-        document.getElementById('resultModal').style.display = 'block';
-
-        confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-    }
-
-    function closeModal() {
-        document.getElementById('resultModal').style.display = 'none';
-        btn.disabled = false;
-    }
-</script>
-</body>
-</html>

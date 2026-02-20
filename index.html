@@ -3,118 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vòng Quay May Mắn - Fixed</title>
+    <title>Vòng Quay May Mắn Pro</title>
     <style>
-        :root { --primary: #e63946; --dark: #1d3557; --gold: #ffb703; }
+        :root { --primary: #e63946; --dark: #0a192f; --gold: #ffb703; }
         body { 
-            font-family: 'Arial', sans-serif; background: #0a192f;
+            font-family: 'Arial', sans-serif; background: var(--dark);
             margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; overflow: hidden;
         }
-        .wheel-container { position: relative; margin-bottom: 20px; z-index: 1; }
+        .wheel-container { position: relative; margin-bottom: 20px; }
         .pointer {
             position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
             width: 40px; height: 50px; background: var(--primary); 
             clip-path: polygon(50% 100%, 0 0, 100% 0);
             z-index: 10; border: 2px solid white;
         }
-        canvas { border: 10px solid #fff; border-radius: 50%; background: #222; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        #result-text { font-size: 2.5rem; font-weight: bold; color: var(--gold); margin-bottom: 15px; height: 50px; text-align: center; }
+        canvas { border: 10px solid #fff; border-radius: 50%; background: #222; }
+        #result-display {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95); color: #333; padding: 30px 50px;
+            border-radius: 20px; text-align: center; display: none; z-index: 100;
+            border: 5px solid var(--gold); box-shadow: 0 0 50px rgba(255, 183, 3, 0.5);
+        }
+        #result-display h2 { margin: 0; font-size: 1.5rem; color: #666; }
+        #result-display h1 { margin: 10px 0; font-size: 3.5rem; color: var(--primary); }
         button {
             padding: 15px 60px; font-size: 2rem; font-weight: bold; cursor: pointer;
             background: var(--primary); color: white; border: none; border-radius: 40px;
             box-shadow: 0 8px 0 #9d212a; transition: 0.1s; outline: none;
         }
         button:active { transform: translateY(6px); box-shadow: 0 2px 0 #9d212a; }
-        button:disabled { background: #444; box-shadow: 0 4px 0 #222; }
         .info { display: flex; gap: 30px; margin-top: 20px; font-size: 1.2rem; }
-        .info b { color: var(--gold); }
         #mode-indicator { position: fixed; top: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 
 <div id="mode-indicator">Normal</div>
-<div id="result-text">SẴN SÀNG!</div>
+
+<div id="result-display">
+    <h2>CHÚC MỪNG BẠN!</h2>
+    <h1 id="prize-name">---</h1>
+    <button onclick="closeModal()" style="font-size: 1.2rem; padding: 10px 30px;">TIẾP TỤC</button>
+</div>
 
 <div class="wheel-container">
     <div class="pointer"></div>
-    <canvas id="wheel" width="480" height="480"></canvas>
+    <canvas id="wheel" width="500" height="500"></canvas>
 </div>
 
 <button id="spinBtn">QUAY (Space)</button>
 
 <div class="info">
-    <div>Giải 50k: <b id="count50">5</b></div>
-    <div>Giải 20k: <b id="count20">10</b></div>
+    <div>Giải 50k: <b id="count50" style="color:var(--gold)">5</b></div>
+    <div>Giải 20k: <b id="count20" style="color:var(--gold)">10</b></div>
 </div>
 
 <audio id="tickSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+<audio id="winSound" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
 
 <script>
     const canvas = document.getElementById('wheel');
     const ctx = canvas.getContext('2d');
     const btn = document.getElementById('spinBtn');
-    const resultDisplay = document.getElementById('result-text');
     const tickSound = document.getElementById('tickSound');
+    const winSound = document.getElementById('winSound');
 
     const prizes = [
-        { label: "10.000đ", color: "#457b9d" },
-        { label: "20.000đ", color: "#2a9d8f" },
-        { label: "10.000đ", color: "#1d3557" },
-        { label: "50.000đ", color: "#e63946" },
-        { label: "10.000đ", color: "#457b9d" },
-        { label: "20.000đ", color: "#2a9d8f" },
-        { label: "10.000đ", color: "#1d3557" },
-        { label: "10.000đ", color: "#f4a261" }
+        { label: "10.000đ", color: "#457b9d" }, { label: "20.000đ", color: "#2a9d8f" },
+        { label: "10.000đ", color: "#1d3557" }, { label: "50.000đ", color: "#e63946" },
+        { label: "10.000đ", color: "#457b9d" }, { label: "20.000đ", color: "#2a9d8f" },
+        { label: "10.000đ", color: "#1d3557" }, { label: "10.000đ", color: "#f4a261" }
     ];
 
     let inventory = { "50.000đ": 5, "20.000đ": 10 };
     let currentRotation = 0;
     let isSpinning = false;
     let cheatMode = false;
-    let lastTickAngle = 0;
+    let particles = [];
 
     function drawWheel() {
         const arc = (2 * Math.PI) / prizes.length;
-        ctx.clearRect(0, 0, 480, 480);
-        
+        ctx.clearRect(0, 0, 500, 500);
         prizes.forEach((prize, i) => {
             const angle = currentRotation + i * arc;
             ctx.beginPath();
             ctx.fillStyle = prize.color;
-            ctx.strokeStyle = "#ffffff";
+            ctx.strokeStyle = "#fff";
             ctx.lineWidth = 2;
-            ctx.moveTo(240, 240);
-            ctx.arc(240, 240, 240, angle, angle + arc);
+            ctx.moveTo(250, 250);
+            ctx.arc(250, 250, 250, angle, angle + arc);
             ctx.fill();
             ctx.stroke();
-
             ctx.save();
             ctx.fillStyle = "white";
-            ctx.translate(240, 240);
+            ctx.translate(250, 250);
             ctx.rotate(angle + arc / 2);
-            ctx.font = "bold 18px Arial";
+            ctx.font = "bold 20px Arial";
             ctx.textAlign = "right";
-            ctx.fillText(prize.label, 220, 10);
+            ctx.fillText(prize.label, 230, 10);
             ctx.restore();
         });
-
-        // Tâm vòng quay
-        ctx.beginPath();
-        ctx.fillStyle = "white";
-        ctx.arc(240, 240, 10, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(250, 250, 15, 0, Math.PI * 2); ctx.fill();
+        
+        // Vẽ pháo hoa nếu có
+        updateParticles();
     }
 
-    // Đảm bảo vẽ ngay khi tải trang
-    window.onload = drawWheel;
+    function createFirework() {
+        for (let i = 0; i < 100; i++) {
+            particles.push({
+                x: 250, y: 250,
+                vx: (Math.random() - 0.5) * 15,
+                vy: (Math.random() - 0.5) * 15,
+                size: Math.random() * 5 + 2,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                life: 1.0
+            });
+        }
+    }
+
+    function updateParticles() {
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
+            if (p.life <= 0) particles.splice(i, 1);
+            ctx.beginPath(); ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+        });
+    }
+
+    window.onload = () => { setInterval(drawWheel, 16); };
 
     window.addEventListener('keydown', (e) => {
         if (e.code === "Space" && !isSpinning) spin();
         if (e.code === "AltRight" || e.key === "AltGraph") {
-            cheatMode = true;
-            document.getElementById('mode-indicator').innerText = "Target: 50K";
-            e.preventDefault();
+            cheatMode = true; document.getElementById('mode-indicator').innerText = "Target: 50K";
         }
     });
 
@@ -122,15 +145,12 @@
 
     function spin() {
         if (isSpinning) return;
-        isSpinning = true;
-        btn.disabled = true;
-        resultDisplay.innerText = "CHỜ KẾT QUẢ...";
-
+        isSpinning = true; btn.disabled = true;
+        
         let targetIndex;
         if (cheatMode && inventory["50.000đ"] > 0) {
             targetIndex = prizes.findIndex(p => p.label === "50.000đ");
-            cheatMode = false;
-            document.getElementById('mode-indicator').innerText = "Normal";
+            cheatMode = false; document.getElementById('mode-indicator').innerText = "Normal";
         } else {
             targetIndex = Math.floor(Math.random() * prizes.length);
             if (inventory[prizes[targetIndex].label] === 0) targetIndex = 0;
@@ -138,36 +158,21 @@
 
         const arc = (2 * Math.PI) / prizes.length;
         const finalAngle = (prizes.length - targetIndex) * arc - arc/2 - (Math.PI/2);
-        const totalRotation = (Math.PI * 2) * 8 + finalAngle;
-
-        let start = null;
-        const duration = 4000;
+        const totalRotation = (Math.PI * 2) * 10 + finalAngle;
+        let start = null; const duration = 4000;
 
         function animate(timestamp) {
             if (!start) start = timestamp;
             let progress = (timestamp - start) / duration;
             if (progress > 1) progress = 1;
-
-            const easing = 1 - Math.pow(1 - progress, 3);
-            currentRotation = easing * totalRotation;
-
-            // Âm thanh
-            const curDeg = (currentRotation * 180 / Math.PI);
-            if (Math.floor(curDeg / (360/prizes.length)) > Math.floor(lastTickAngle / (360/prizes.length))) {
-                tickSound.currentTime = 0;
-                tickSound.play().catch(()=>{});
-            }
-            lastTickAngle = curDeg;
-
-            drawWheel();
-
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
+            currentRotation = (1 - Math.pow(1 - progress, 3)) * totalRotation;
+            if (progress < 1) requestAnimationFrame(animate);
+            else {
                 isSpinning = false;
-                btn.disabled = false;
                 const result = prizes[targetIndex].label;
-                resultDisplay.innerText = "TRÚNG: " + result;
+                document.getElementById('prize-name').innerText = result;
+                document.getElementById('result-display').style.display = 'block';
+                winSound.play(); createFirework();
                 if (inventory[result] !== undefined) {
                     inventory[result]--;
                     document.getElementById('count50').innerText = inventory["50.000đ"];
@@ -176,6 +181,11 @@
             }
         }
         requestAnimationFrame(animate);
+    }
+
+    function closeModal() {
+        document.getElementById('result-display').style.display = 'none';
+        btn.disabled = false;
     }
 </script>
 </body>

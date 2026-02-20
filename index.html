@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vòng Quay May Mắn Pro Max</title>
+    <title>Vòng Quay May Mắn Pro Max - Fixed</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #e63946; --dark: #1d3557; --gold: #ffb703; }
@@ -12,29 +12,38 @@
             margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; overflow: hidden;
         }
 
-        .wheel-container { position: relative; margin-bottom: 30px; }
-        
-        /* Kim chỉ giải thưởng */
+        .wheel-container { position: relative; margin-bottom: 20px; }
         .pointer {
             position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
             width: 45px; height: 55px; background: var(--primary); 
             clip-path: polygon(50% 100%, 0 0, 100% 0);
-            z-index: 10; border: 3px solid white; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+            z-index: 10; border: 3px solid white;
         }
 
-        canvas { border: 15px solid #fff; border-radius: 50%; box-shadow: 0 0 80px rgba(255,255,255,0.2); background: white; }
+        canvas { border: 12px solid #fff; border-radius: 50%; box-shadow: 0 0 50px rgba(255,255,255,0.2); background: white; }
 
         button {
-            padding: 25px 80px; font-size: 2.8rem; font-weight: bold; cursor: pointer;
-            background: var(--primary); color: white; border: none; border-radius: 60px;
-            box-shadow: 0 12px 0 #9d212a; transition: 0.1s; outline: none; text-transform: uppercase;
+            padding: 20px 70px; font-size: 2.5rem; font-weight: bold; cursor: pointer;
+            background: var(--primary); color: white; border: none; border-radius: 50px;
+            box-shadow: 0 10px 0 #9d212a; transition: 0.1s; outline: none;
         }
-        button:active { transform: translateY(10px); box-shadow: 0 2px 0 #9d212a; }
+        button:active { transform: translateY(8px); box-shadow: 0 2px 0 #9d212a; }
         button:disabled { background: #555; box-shadow: 0 5px 0 #222; cursor: not-allowed; }
 
-        .info { display: flex; gap: 50px; margin-top: 30px; font-size: 1.8rem; font-weight: bold; }
-        .info span { color: var(--gold); font-size: 2.5rem; }
-        
+        .info { display: flex; gap: 40px; margin-top: 20px; font-size: 1.6rem; font-weight: bold; }
+        .info span { color: var(--gold); }
+
+        /* Bảng thông báo chúc mừng */
+        #resultModal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; color: #333; padding: 40px; border-radius: 30px;
+            box-shadow: 0 0 100px rgba(255, 255, 255, 0.5); z-index: 100; text-align: center;
+            min-width: 300px; border: 10px solid var(--gold);
+        }
+        #resultModal h2 { font-size: 2rem; margin: 0; color: #666; }
+        #resultModal h1 { font-size: 4rem; margin: 10px 0; color: var(--primary); }
+        #resultModal button { font-size: 1.5rem; padding: 10px 40px; margin-top: 20px; box-shadow: none; }
+
         #mode-indicator { position: fixed; top: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.05); }
     </style>
 </head>
@@ -42,20 +51,26 @@
 
 <div id="mode-indicator">Normal</div>
 
+<div id="resultModal">
+    <h2>CHÚC MỪNG BẠN!</h2>
+    <h1 id="prizeText">---</h1>
+    <button onclick="closeModal()">TIẾP TỤC</button>
+</div>
+
 <div class="wheel-container">
     <div class="pointer"></div>
-    <canvas id="wheel" width="550" height="550"></canvas>
+    <canvas id="wheel" width="500" height="500"></canvas>
 </div>
 
 <button id="spinBtn">QUAY (Space)</button>
 
 <div class="info">
-    <div>50k: <span id="count50">5</span></div>
-    <div>20k: <span id="count20">10</span></div>
+    <div>Giải 50k: <span id="count50">5</span></div>
+    <div>Giải 20k: <span id="count20">10</span></div>
 </div>
 
-<audio id="tickSound" src="https://www.soundjay.com/communication/sounds/mechanical-clonk-1.mp3"></audio>
-<audio id="winSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
+<audio id="tickSound" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+<audio id="winSound" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
 
 <script>
     const canvas = document.getElementById('wheel');
@@ -64,7 +79,6 @@
     const tickSound = document.getElementById('tickSound');
     const winSound = document.getElementById('winSound');
 
-    // Cấu hình các ô trên vòng quay
     const prizes = [
         { label: "10.000đ", color: "#457b9d" },
         { label: "20.000đ", color: "#2a9d8f" },
@@ -84,48 +98,40 @@
 
     function drawWheel() {
         const arc = (2 * Math.PI) / prizes.length;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+        ctx.clearRect(0, 0, 500, 500);
         prizes.forEach((prize, i) => {
             const angle = currentRotation + i * arc;
-            
-            // Vẽ nan quạt
             ctx.beginPath();
             ctx.fillStyle = prize.color;
             ctx.strokeStyle = "#fff";
             ctx.lineWidth = 2;
-            ctx.moveTo(275, 275);
-            ctx.arc(275, 275, 275, angle, angle + arc);
+            ctx.moveTo(250, 250);
+            ctx.arc(250, 250, 250, angle, angle + arc);
             ctx.fill();
             ctx.stroke();
 
-            // Vẽ chữ
             ctx.save();
             ctx.fillStyle = "white";
-            ctx.translate(275, 275);
+            ctx.translate(250, 250);
             ctx.rotate(angle + arc / 2);
-            ctx.font = "bold 26px Arial";
+            ctx.font = "bold 22px Arial";
             ctx.textAlign = "right";
-            ctx.fillText(prize.label, 240, 10);
+            ctx.fillText(prize.label, 230, 10);
             ctx.restore();
         });
-
-        // Vẽ tâm vòng quay
         ctx.beginPath();
         ctx.fillStyle = "white";
-        ctx.arc(275, 275, 15, 0, Math.PI * 2);
+        ctx.arc(250, 250, 12, 0, Math.PI * 2);
         ctx.fill();
     }
 
     drawWheel();
 
-    // Điều khiển
     window.addEventListener('keydown', (e) => {
-        if (e.code === "Space" && !isSpinning) spin();
+        if (e.code === "Space" && !isSpinning && document.getElementById('resultModal').style.display !== 'block') spin();
         if (e.code === "AltRight" || e.key === "AltGraph") {
             cheatMode = true;
             document.getElementById('mode-indicator').innerText = "Target: 50K";
-            e.preventDefault();
         }
     });
 
@@ -133,64 +139,61 @@
 
     function spin() {
         if (isSpinning) return;
+        
+        // Kích hoạt âm thanh (Unlock audio trên Chrome)
+        tickSound.play().then(() => tickSound.pause());
+        winSound.play().then(() => winSound.pause());
+
         isSpinning = true;
         btn.disabled = true;
 
         let targetPrizeIndex;
-        
         if (cheatMode && inventory["50.000đ"] > 0) {
             targetPrizeIndex = prizes.findIndex(p => p.label === "50.000đ");
             cheatMode = false;
             document.getElementById('mode-indicator').innerText = "Normal";
         } else {
             targetPrizeIndex = Math.floor(Math.random() * prizes.length);
-            if (inventory[prizes[targetPrizeIndex].label] === 0) {
-                targetPrizeIndex = 0; // Trả về 10k nếu giải kia đã hết
-            }
+            if (inventory[prizes[targetPrizeIndex].label] === 0) targetPrizeIndex = 0;
         }
 
         const arc = (2 * Math.PI) / prizes.length;
-        // Tính toán góc dừng để mũi tên chỉ vào giữa ô (Kim ở đỉnh -1.57rad)
         const finalAngle = (prizes.length - targetPrizeIndex) * arc - arc/2 - (Math.PI/2);
-        const extraRotation = (Math.PI * 2) * 12; // Quay 12 vòng
-        const totalRotationTarget = extraRotation + finalAngle;
+        const totalRotationTarget = (Math.PI * 2) * 10 + finalAngle;
 
         let start = null;
-        const duration = 6000; // Quay trong 6 giây cho kịch tính
+        const duration = 5000;
 
         function animate(timestamp) {
             if (!start) start = timestamp;
             let progress = (timestamp - start) / duration;
             if (progress > 1) progress = 1;
 
-            const easing = 1 - Math.pow(1 - progress, 3.5); // Ease out mượt mà
+            const easing = 1 - Math.pow(1 - progress, 3);
             currentRotation = easing * totalRotationTarget;
 
-            // Xử lý âm thanh "Tạch tạch"
-            const currentAngleDegrees = (currentRotation * 180 / Math.PI);
-            const arcDegrees = 360 / prizes.length;
-            if (Math.floor(currentAngleDegrees / arcDegrees) > Math.floor(lastTickAngle / arcDegrees)) {
+            // Âm thanh tạch tạch
+            const curAngleDeg = (currentRotation * 180 / Math.PI);
+            if (Math.floor(curAngleDeg / (360/prizes.length)) > Math.floor(lastTickAngle / (360/prizes.length))) {
                 tickSound.currentTime = 0;
-                tickSound.volume = Math.max(0.1, 1 - progress); // Nhỏ dần âm lượng khi dừng
                 tickSound.play().catch(()=>{});
             }
-            lastTickAngle = currentAngleDegrees;
+            lastTickAngle = curAngleDeg;
 
             drawWheel();
 
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
-                finishSpin(prizes[targetPrizeIndex].label);
+                showResult(prizes[targetPrizeIndex].label);
             }
         }
         requestAnimationFrame(animate);
     }
 
-    function finishSpin(result) {
+    function showResult(result) {
         isSpinning = false;
-        btn.disabled = false;
-        winSound.play();
+        winSound.play().catch(()=>{});
 
         if (inventory[result] !== undefined) {
             inventory[result]--;
@@ -198,18 +201,16 @@
             document.getElementById('count20').innerText = inventory["20.000đ"];
         }
 
-        // Hiệu ứng pháo hoa
-        if (result === "50.000đ") {
-            var duration = 4 * 1000;
-            var end = Date.now() + duration;
-            (function frame() {
-                confetti({ particleCount: 10, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ff0000', '#ffd700'] });
-                confetti({ particleCount: 10, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ff0000', '#ffd700'] });
-                if (Date.now() < end) requestAnimationFrame(frame);
-            }());
-        } else {
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        }
+        // Hiện bảng thông báo trúng giải
+        document.getElementById('prizeText').innerText = result;
+        document.getElementById('resultModal').style.display = 'block';
+
+        confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+    }
+
+    function closeModal() {
+        document.getElementById('resultModal').style.display = 'none';
+        btn.disabled = false;
     }
 </script>
 </body>

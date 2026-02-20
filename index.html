@@ -3,43 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vòng Quay May Mắn Pro</title>
+    <title>Vòng Quay May Mắn - Fixed</title>
     <style>
         :root { --primary: #e63946; --dark: #1d3557; --gold: #ffb703; }
         body { 
-            font-family: 'Arial', sans-serif; background: radial-gradient(circle, #1d3557 0%, #000 100%);
+            font-family: 'Arial', sans-serif; background: #0a192f;
             margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; overflow: hidden;
         }
-
-        .wheel-container { position: relative; margin-bottom: 20px; }
-        
-        /* Kim chỉ giải thưởng */
+        .wheel-container { position: relative; margin-bottom: 20px; z-index: 1; }
         .pointer {
-            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
-            width: 45px; height: 55px; background: var(--primary); 
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 40px; height: 50px; background: var(--primary); 
             clip-path: polygon(50% 100%, 0 0, 100% 0);
-            z-index: 10; border: 3px solid white;
+            z-index: 10; border: 2px solid white;
         }
-
-        canvas { border: 12px solid #fff; border-radius: 50%; box-shadow: 0 0 50px rgba(255,255,255,0.2); background: white; }
-
-        #result-text {
-            font-size: 3rem; font-weight: bold; color: var(--gold); height: 60px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(0,0,0,0.5);
-            text-transform: uppercase;
-        }
-
+        canvas { border: 10px solid #fff; border-radius: 50%; background: #222; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        #result-text { font-size: 2.5rem; font-weight: bold; color: var(--gold); margin-bottom: 15px; height: 50px; text-align: center; }
         button {
-            padding: 20px 70px; font-size: 2.5rem; font-weight: bold; cursor: pointer;
-            background: var(--primary); color: white; border: none; border-radius: 50px;
-            box-shadow: 0 10px 0 #9d212a; transition: 0.1s; outline: none;
+            padding: 15px 60px; font-size: 2rem; font-weight: bold; cursor: pointer;
+            background: var(--primary); color: white; border: none; border-radius: 40px;
+            box-shadow: 0 8px 0 #9d212a; transition: 0.1s; outline: none;
         }
-        button:active { transform: translateY(8px); box-shadow: 0 2px 0 #9d212a; }
-        button:disabled { background: #555; box-shadow: 0 5px 0 #222; cursor: not-allowed; }
-
-        .info { display: flex; gap: 40px; margin-top: 20px; font-size: 1.6rem; font-weight: bold; }
-        .info span { color: var(--gold); }
-        
-        #mode-indicator { position: fixed; top: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.05); }
+        button:active { transform: translateY(6px); box-shadow: 0 2px 0 #9d212a; }
+        button:disabled { background: #444; box-shadow: 0 4px 0 #222; }
+        .info { display: flex; gap: 30px; margin-top: 20px; font-size: 1.2rem; }
+        .info b { color: var(--gold); }
+        #mode-indicator { position: fixed; top: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
@@ -49,18 +38,17 @@
 
 <div class="wheel-container">
     <div class="pointer"></div>
-    <canvas id="wheel" width="500" height="500"></canvas>
+    <canvas id="wheel" width="480" height="480"></canvas>
 </div>
 
 <button id="spinBtn">QUAY (Space)</button>
 
 <div class="info">
-    <div>Giải 50k: <span id="count50">5</span></div>
-    <div>Giải 20k: <span id="count20">10</span></div>
+    <div>Giải 50k: <b id="count50">5</b></div>
+    <div>Giải 20k: <b id="count20">10</b></div>
 </div>
 
 <audio id="tickSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-<audio id="winSound" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
 
 <script>
     const canvas = document.getElementById('wheel');
@@ -68,7 +56,6 @@
     const btn = document.getElementById('spinBtn');
     const resultDisplay = document.getElementById('result-text');
     const tickSound = document.getElementById('tickSound');
-    const winSound = document.getElementById('winSound');
 
     const prizes = [
         { label: "10.000đ", color: "#457b9d" },
@@ -89,34 +76,38 @@
 
     function drawWheel() {
         const arc = (2 * Math.PI) / prizes.length;
-        ctx.clearRect(0, 0, 500, 500);
+        ctx.clearRect(0, 0, 480, 480);
+        
         prizes.forEach((prize, i) => {
             const angle = currentRotation + i * arc;
             ctx.beginPath();
             ctx.fillStyle = prize.color;
-            ctx.strokeStyle = "#fff";
+            ctx.strokeStyle = "#ffffff";
             ctx.lineWidth = 2;
-            ctx.moveTo(250, 250);
-            ctx.arc(250, 250, 250, angle, angle + arc);
+            ctx.moveTo(240, 240);
+            ctx.arc(240, 240, 240, angle, angle + arc);
             ctx.fill();
             ctx.stroke();
 
             ctx.save();
             ctx.fillStyle = "white";
-            ctx.translate(250, 250);
+            ctx.translate(240, 240);
             ctx.rotate(angle + arc / 2);
-            ctx.font = "bold 22px Arial";
+            ctx.font = "bold 18px Arial";
             ctx.textAlign = "right";
-            ctx.fillText(prize.label, 230, 10);
+            ctx.fillText(prize.label, 220, 10);
             ctx.restore();
         });
+
+        // Tâm vòng quay
         ctx.beginPath();
         ctx.fillStyle = "white";
-        ctx.arc(250, 250, 12, 0, Math.PI * 2);
+        ctx.arc(240, 240, 10, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    drawWheel();
+    // Đảm bảo vẽ ngay khi tải trang
+    window.onload = drawWheel;
 
     window.addEventListener('keydown', (e) => {
         if (e.code === "Space" && !isSpinning) spin();
@@ -133,24 +124,24 @@
         if (isSpinning) return;
         isSpinning = true;
         btn.disabled = true;
-        resultDisplay.innerText = "ĐANG QUAY...";
+        resultDisplay.innerText = "CHỜ KẾT QUẢ...";
 
-        let targetPrizeIndex;
+        let targetIndex;
         if (cheatMode && inventory["50.000đ"] > 0) {
-            targetPrizeIndex = prizes.findIndex(p => p.label === "50.000đ");
+            targetIndex = prizes.findIndex(p => p.label === "50.000đ");
             cheatMode = false;
             document.getElementById('mode-indicator').innerText = "Normal";
         } else {
-            targetPrizeIndex = Math.floor(Math.random() * prizes.length);
-            if (inventory[prizes[targetPrizeIndex].label] === 0) targetPrizeIndex = 0;
+            targetIndex = Math.floor(Math.random() * prizes.length);
+            if (inventory[prizes[targetIndex].label] === 0) targetIndex = 0;
         }
 
         const arc = (2 * Math.PI) / prizes.length;
-        const finalAngle = (prizes.length - targetPrizeIndex) * arc - arc/2 - (Math.PI/2);
-        const totalRotationTarget = (Math.PI * 2) * 10 + finalAngle;
+        const finalAngle = (prizes.length - targetIndex) * arc - arc/2 - (Math.PI/2);
+        const totalRotation = (Math.PI * 2) * 8 + finalAngle;
 
         let start = null;
-        const duration = 5000;
+        const duration = 4000;
 
         function animate(timestamp) {
             if (!start) start = timestamp;
@@ -158,38 +149,33 @@
             if (progress > 1) progress = 1;
 
             const easing = 1 - Math.pow(1 - progress, 3);
-            currentRotation = easing * totalRotationTarget;
+            currentRotation = easing * totalRotation;
 
-            const curAngleDeg = (currentRotation * 180 / Math.PI);
-            if (Math.floor(curAngleDeg / (360/prizes.length)) > Math.floor(lastTickAngle / (360/prizes.length))) {
+            // Âm thanh
+            const curDeg = (currentRotation * 180 / Math.PI);
+            if (Math.floor(curDeg / (360/prizes.length)) > Math.floor(lastTickAngle / (360/prizes.length))) {
                 tickSound.currentTime = 0;
                 tickSound.play().catch(()=>{});
             }
-            lastTickAngle = curAngleDeg;
+            lastTickAngle = curDeg;
 
             drawWheel();
 
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
-                finishSpin(prizes[targetPrizeIndex].label);
+                isSpinning = false;
+                btn.disabled = false;
+                const result = prizes[targetIndex].label;
+                resultDisplay.innerText = "TRÚNG: " + result;
+                if (inventory[result] !== undefined) {
+                    inventory[result]--;
+                    document.getElementById('count50').innerText = inventory["50.000đ"];
+                    document.getElementById('count20').innerText = inventory["20.000đ"];
+                }
             }
         }
         requestAnimationFrame(animate);
-    }
-
-    function finishSpin(result) {
-        isSpinning = false;
-        btn.disabled = false;
-        winSound.play().catch(()=>{});
-
-        if (inventory[result] !== undefined) {
-            inventory[result]--;
-            document.getElementById('count50').innerText = inventory["50.000đ"];
-            document.getElementById('count20').innerText = inventory["20.000đ"];
-        }
-
-        resultDisplay.innerText = "KẾT QUẢ: " + result;
     }
 </script>
 </body>

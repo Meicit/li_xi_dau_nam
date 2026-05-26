@@ -3,190 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vòng Quay May Mắn Pro</title>
+    <title>Trợ Lý Số Cuộc Họp AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        :root { --primary: #e63946; --dark: #0a192f; --gold: #ffb703; }
-        body { 
-            font-family: 'Arial', sans-serif; background: var(--dark);
-            margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; overflow: hidden;
-        }
-        .wheel-container { position: relative; margin-bottom: 20px; }
-        .pointer {
-            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            width: 40px; height: 50px; background: var(--primary); 
-            clip-path: polygon(50% 100%, 0 0, 100% 0);
-            z-index: 10; border: 2px solid white;
-        }
-        canvas { border: 10px solid #fff; border-radius: 50%; background: #222; }
-        #result-display {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95); color: #333; padding: 30px 50px;
-            border-radius: 20px; text-align: center; display: none; z-index: 100;
-            border: 5px solid var(--gold); box-shadow: 0 0 50px rgba(255, 183, 3, 0.5);
-        }
-        #result-display h2 { margin: 0; font-size: 1.5rem; color: #666; }
-        #result-display h1 { margin: 10px 0; font-size: 3.5rem; color: var(--primary); }
-        button {
-            padding: 15px 60px; font-size: 2rem; font-weight: bold; cursor: pointer;
-            background: var(--primary); color: white; border: none; border-radius: 40px;
-            box-shadow: 0 8px 0 #9d212a; transition: 0.1s; outline: none;
-        }
-        button:active { transform: translateY(6px); box-shadow: 0 2px 0 #9d212a; }
-        .info { display: flex; gap: 30px; margin-top: 20px; font-size: 1.2rem; }
-        #mode-indicator { position: fixed; top: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.1); }
+        .loading { display: none; }
+        .loading.active { display: flex; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen font-sans">
 
-<div id="mode-indicator">Normal</div>
+    <div class="max-w-5xl mx-auto px-4 py-8">
+        <div class="text-center mb-8 border-b border-slate-200 pb-6">
+            <h1 class="text-3xl font-bold text-slate-800">📝 Hệ Thống Trích Xuất Biên Bản & Giao Việc Tự Động</h1>
+            <p class="text-slate-500 mt-2">Xử lý tệp ghi âm cuộc họp bằng công nghệ AI trực tiếp trên trình duyệt</p>
+        </div>
 
-<div id="result-display">
-    <h2>CHÚC MỪNG BẠN!</h2>
-    <h1 id="prize-name">---</h1>
-    <button onclick="closeModal()" style="font-size: 1.2rem; padding: 10px 30px;">TIẾP TỤC</button>
-</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">🔑 Cấu Hình Khóa AI</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Groq API Key (Bóc băng):</label>
+                            <input type="password" id="groqKey" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" placeholder="gsk_...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Gemini API Key (Tóm tắt):</label>
+                            <input type="password" id="geminiKey" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" placeholder="AIzaSy...">
+                        </div>
+                    </div>
+                </div>
 
-<div class="wheel-container">
-    <div class="pointer"></div>
-    <canvas id="wheel" width="500" height="500"></canvas>
-</div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4">🎵 File Ghi Âm Cuộc Họp</h2>
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 cursor-pointer relative">
+                            <input type="file" id="audioFile" accept="audio/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                            <div class="text-slate-500 text-sm">
+                                <p class="font-medium text-blue-600">Bấm để chọn file</p>
+                                <p class="text-xs mt-1">Hỗ trợ .m4a, .mp3, .wav, .mp4</p>
+                            </div>
+                        </div>
+                        <div id="fileName" class="text-xs text-slate-600 font-medium truncate bg-slate-100 p-2 rounded hidden"></div>
+                        <button id="btnProcess" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors text-sm shadow-sm">
+                            🚀 Bắt Đầu Xử Lý Cuộc Họp
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-<button id="spinBtn">QUAY (Space)</button>
+            <div class="md:col-span-2 space-y-6">
+                <div id="loadingBox" class="loading hidden bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex-col items-center justify-center text-center">
+                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent mb-4"></div>
+                    <p id="loadingStatus" class="text-slate-700 font-medium text-sm">Đang chuẩn bị dữ liệu...</p>
+                </div>
 
-<div class="info">
-    <div>Giải 50k: <b id="count50" style="color:var(--gold)">5</b></div>
-    <div>Giải 20k: <b id="count20" style="color:var(--gold)">10</b></div>
-</div>
+                <div id="resultBox" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hidden">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                        <h2 class="text-lg font-semibold text-slate-800">✨ Kết Quả Văn Bản Chỉ Đạo & Giao Việc</h2>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('aiOutput').innerText); alert('Đã sao chép nội dung!')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded border border-slate-200">
+                            📋 Sao chép nội dung
+                        </button>
+                    </div>
+                    <div id="aiOutput" class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<audio id="tickSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-<audio id="winSound" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
-
-<script>
-    const canvas = document.getElementById('wheel');
-    const ctx = canvas.getContext('2d');
-    const btn = document.getElementById('spinBtn');
-    const tickSound = document.getElementById('tickSound');
-    const winSound = document.getElementById('winSound');
-
-    const prizes = [
-        { label: "10.000đ", color: "#457b9d" }, { label: "20.000đ", color: "#2a9d8f" },
-        { label: "10.000đ", color: "#1d3557" }, { label: "50.000đ", color: "#e63946" },
-        { label: "10.000đ", color: "#457b9d" }, { label: "20.000đ", color: "#2a9d8f" },
-        { label: "10.000đ", color: "#1d3557" }, { label: "10.000đ", color: "#f4a261" }
-    ];
-
-    let inventory = { "50.000đ": 5, "20.000đ": 10 };
-    let currentRotation = 0;
-    let isSpinning = false;
-    let cheatMode = false;
-    let particles = [];
-
-    function drawWheel() {
-        const arc = (2 * Math.PI) / prizes.length;
-        ctx.clearRect(0, 0, 500, 500);
-        prizes.forEach((prize, i) => {
-            const angle = currentRotation + i * arc;
-            ctx.beginPath();
-            ctx.fillStyle = prize.color;
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 2;
-            ctx.moveTo(250, 250);
-            ctx.arc(250, 250, 250, angle, angle + arc);
-            ctx.fill();
-            ctx.stroke();
-            ctx.save();
-            ctx.fillStyle = "white";
-            ctx.translate(250, 250);
-            ctx.rotate(angle + arc / 2);
-            ctx.font = "bold 20px Arial";
-            ctx.textAlign = "right";
-            ctx.fillText(prize.label, 230, 10);
-            ctx.restore();
-        });
-        ctx.beginPath(); ctx.fillStyle = "white"; ctx.arc(250, 250, 15, 0, Math.PI * 2); ctx.fill();
-        
-        // Vẽ pháo hoa nếu có
-        updateParticles();
-    }
-
-    function createFirework() {
-        for (let i = 0; i < 100; i++) {
-            particles.push({
-                x: 250, y: 250,
-                vx: (Math.random() - 0.5) * 15,
-                vy: (Math.random() - 0.5) * 15,
-                size: Math.random() * 5 + 2,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                life: 1.0
-            });
-        }
-    }
-
-    function updateParticles() {
-        particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
-            if (p.life <= 0) particles.splice(i, 1);
-            ctx.beginPath(); ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-            ctx.globalAlpha = 1.0;
-        });
-    }
-
-    window.onload = () => { setInterval(drawWheel, 16); };
-
-    window.addEventListener('keydown', (e) => {
-        if (e.code === "Space" && !isSpinning) spin();
-        if (e.code === "AltRight" || e.key === "AltGraph") {
-            cheatMode = true; document.getElementById('mode-indicator').innerText = "Target: 50K";
-        }
-    });
-
-    btn.onclick = spin;
-
-    function spin() {
-        if (isSpinning) return;
-        isSpinning = true; btn.disabled = true;
-        
-        let targetIndex;
-        if (cheatMode && inventory["50.000đ"] > 0) {
-            targetIndex = prizes.findIndex(p => p.label === "50.000đ");
-            cheatMode = false; document.getElementById('mode-indicator').innerText = "Normal";
-        } else {
-            targetIndex = Math.floor(Math.random() * prizes.length);
-            if (inventory[prizes[targetIndex].label] === 0) targetIndex = 0;
-        }
-
-        const arc = (2 * Math.PI) / prizes.length;
-        const finalAngle = (prizes.length - targetIndex) * arc - arc/2 - (Math.PI/2);
-        const totalRotation = (Math.PI * 2) * 10 + finalAngle;
-        let start = null; const duration = 4000;
-
-        function animate(timestamp) {
-            if (!start) start = timestamp;
-            let progress = (timestamp - start) / duration;
-            if (progress > 1) progress = 1;
-            currentRotation = (1 - Math.pow(1 - progress, 3)) * totalRotation;
-            if (progress < 1) requestAnimationFrame(animate);
-            else {
-                isSpinning = false;
-                const result = prizes[targetIndex].label;
-                document.getElementById('prize-name').innerText = result;
-                document.getElementById('result-display').style.display = 'block';
-                winSound.play(); createFirework();
-                if (inventory[result] !== undefined) {
-                    inventory[result]--;
-                    document.getElementById('count50').innerText = inventory["50.000đ"];
-                    document.getElementById('count20').innerText = inventory["20.000đ"];
-                }
+    <script>
+        // Hiển thị tên file khi người dùng chọn file âm thanh
+        document.getElementById('audioFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const nameDiv = document.getElementById('fileName');
+            if(file) {
+                nameDiv.textContent = "📁 Đã chọn: " + file.name;
+                nameDiv.classList.remove('hidden');
             }
-        }
-        requestAnimationFrame(animate);
-    }
+        });
 
-    function closeModal() {
-        document.getElementById('result-display').style.display = 'none';
-        btn.disabled = false;
-    }
-</script>
+        document.getElementById('btnProcess').addEventListener('click', async () => {
+            const groqKey = document.getElementById('groqKey').value.trim();
+            const geminiKey = document.getElementById('geminiKey').value.trim();
+            const audioFile = document.getElementById('audioFile').files[0];
+
+            if(!groqKey || !geminiKey || !audioFile) {
+                alert("Vui lòng điền đầy đủ 2 mã khóa API và chọn tệp ghi âm cuộc họp.");
+                return;
+            }
+
+            const loadingBox = document.getElementById('loadingBox');
+            const loadingStatus = document.getElementById('loadingStatus');
+            const resultBox = document.getElementById('resultBox');
+            const aiOutput = document.getElementById('aiOutput');
+
+            loadingBox.classList.add('active');
+            resultBox.classList.add('hidden');
+
+            try {
+                // --- BƯỚC 1: GỬI FILE QUA AI WHISPER (GROQ) ĐỂ BÓC BĂNG THÀNH CHỮ ---
+                loadingStatus.textContent = "Giai đoạn 1: AI đang tiến hành nghe và bóc băng file ghi âm (Speech-to-Text)...";
+                
+                const formData = new FormData();
+                formData.append('file', audioFile);
+                formData.append('model', 'whisper-large-v3');
+                formData.append('language', 'vi');
+                formData.append('response_format', 'text');
+
+                const whisperResponse = await fetch('https://api.groq.com/openid/v1/audio/transcriptions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${groqKey}` },
+                    body: formData
+                });
+
+                if(!whisperResponse.ok) throw new Error("Lỗi khi kết nối với hệ thống bóc băng Groq.");
+                const transcriptText = await whisperResponse.text();
+
+                // --- BƯỚC 2: GỬI ĐOẠN VĂN BẢN QUA AI GEMINI ĐỂ LUẬN VÀ LẬP BẢNG PHÂN VIỆC ---
+                loadingStatus.textContent = "Giai đoạn 2: Khởi tạo mô hình AI, tổng hợp nội dung kết luận và soạn bảng giao việc...";
+
+                const prompt = `Bạn là một Thư ký Trợ lý Giám đốc chuyên nghiệp, có năng lực xử lý văn bản hành chính xuất sắc. 
+Dưới đây là toàn bộ văn bản thô (Transcript) được bóc băng từ một cuộc họp cơ quan/doanh nghiệp:
+"${transcriptText}"
+
+Nhiệm vụ của bạn là hãy đọc kỹ nội dung và lập hồ sơ báo cáo phân tách thành 2 phần rõ rệt:
+PHẦN 1: BIÊN BẢN TÓM TẮT & KẾT LUẬN CUỘC HỌP
+- Tóm tắt ngắn gọn các vấn đề then chốt được thảo luận trong cuộc họp (Lọc bỏ các câu thoại thừa, lời chào hỏi xã giao).
+- Trích xuất chính xác các quyết định cuối cùng, tư tưởng chỉ đạo hoặc định hướng giải quyết của cấp lãnh đạo/người chủ trì cuộc họp.
+
+PHẦN 2: THÔNG BÁO GIAO VIỆC & TIẾN ĐỘ THỰC HIỆN
+Lập danh sách các đầu việc cụ thể được giao dưới dạng bảng (STT | Nội dung công việc | Nhân sự chủ trì thực hiện | Thời hạn hoàn thành).
+
+Yêu cầu: Sử dụng ngôn ngữ hành chính nghiêm túc, mạch lạc, chính xác, không suy diễn sai lệch so với transcript gốc.`;
+
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+                const geminiResponse = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                if(!geminiResponse.ok) throw new Error("Lỗi khi kết nối với hệ thống AI Gemini.");
+                const geminiData = await geminiResponse.json();
+                
+                let aiTextResult = geminiData.candidates[0].content.parts[0].text;
+                
+                // Hiển thị kết quả ra màn hình
+                aiOutput.innerText = aiTextResult;
+                resultBox.classList.remove('hidden');
+
+            } catch (error) {
+                alert("Đã xảy ra lỗi trong quá trình xử lý: " + error.message);
+            } finally {
+                loadingBox.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>
